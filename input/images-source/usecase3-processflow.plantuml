@@ -1,0 +1,53 @@
+@startuml
+' Extended SMRT Workflow for "headless TMS"
+!theme ihe-ro from ./themes
+title Extended SMRT Workflow for "headless TMS"
+hide footbox
+
+participant ROIS
+participant TMS
+participant OST
+
+== Patient Registration ==
+ROIS -> TMS : Patient Identity Management [ITI-30]
+ROIS -> TMS : Patient Encounter Management [ITI-31]
+ROIS -> TMS : Send Patient Photo [FHIR Message]
+...
+ROIS -[#a8a8a8]> ROIS : Schedule Appointments
+
+loop For each appointment
+  ||10||
+  ROIS -> TMS : Appointment Notification [RAD-48]
+  ||10||
+end
+...
+== Treatment Planning ==
+ROIS -[#a8a8a8]> ROIS : Create, Review, Approve Treatment Plan
+ROIS -> OST : Publish Approved Planning Artifacts [DICOM]
+...
+== Treatment Delivery Preparation ==
+ROIS -[#a8a8a8]> ROIS : Enrich Plan for Delivery
+ROIS -[#a8a8a8]> ROIS : Prepare Sessions,\nAssign Plan Fractions to Scheduled Appointments
+ROIS -[#a8a8a8]> ROIS : Approve treatment
+ROIS -> OST : Store Deliverable Plan Artifacts [DICOM]
+ROIS -> TMS : Report Deliverable Plan Artifact Ready [FHIR Message]
+ROIS -> TMS : Appointment-to-Plan/Fraction Assignments [FHIR Message]
+note right of ROIS : Each assignment identifies the appointment,\napproved plan and fraction number.
+TMS -> OST : Retrieve Deliverable Plan Artifact [DICOM]
+TMS -[#a8a8a8]> TMS : Prepare Delivery Sessions from Assignments (no user interaction)
+...
+== Treatment Delivery ==
+loop For each treatment session
+...
+  ROIS -> TMS : Patient Check-in Appointment Notification [RAD-48]
+  note right of ROIS : SIU^S13 - Reschedule Bookings
+...
+  TMS -[#a8a8a8]> TMS : Manage Treatment Session Delivery
+  TMS -> ROIS : Report Delivery Artifacts Ready [FHIR Message]
+  ROIS -> OST : Retrieve Delivery Artifacts [DICOM]
+  ...
+  ROIS -[#a8a8a8]> ROIS : Track Treatment Progress
+  ||10||
+end
+
+@enduml
